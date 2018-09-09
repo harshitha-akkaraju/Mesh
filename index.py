@@ -21,13 +21,14 @@ def mesh():
     prob_not_spam = non_spam_count / float(all_sms)
     positive = {}
     negative = {}
+    dictionary = set([])
 
     for row in training_data.itertuples():
-        process_sms_bow(row.label, row.sms_content, positive, negative)
+        process_sms_bow(row.label, row.sms_content, positive, negative, dictionary)
 
     bow_model_labels = []
     for row in evaluation_data.itertuples():
-        is_spam = bag_of_words_classifier(prob_spam, prob_not_spam, positive, negative, row.sms_content)
+        is_spam = bag_of_words_classifier(prob_spam, prob_not_spam, positive, negative, dictionary, row.sms_content)
         if is_spam:
             bow_model_labels.append("spam")
         else:
@@ -38,9 +39,10 @@ def mesh():
 
 
 # function to obtain the word frequencies in an email
-def process_sms_bow(label, content, positive, negative):
+def process_sms_bow(label, content, positive, negative, dictionary):
     words = content.split()
     for word in words:
+        dictionary.add(word)
         if label == "spam":
             if word in positive:
                 positive[word] = positive[word] + 1
@@ -54,26 +56,27 @@ def process_sms_bow(label, content, positive, negative):
 
 
 # computes a weight metric for the word depending on whether or not it is spam
-def eval_word_bow(is_spam, word, positive, negative):
+def eval_word_bow(is_spam, word, positive, negative, dictionary):
+    alpha = 1
     if is_spam and word in positive:
-        return positive[word] / float(len(positive))
-    elif (not is_spam) and (word in negative):
-        return negative[word] / float(len(negative))
-    return 0.00001    # if it is an unseen word
+        return math.log((positive[word] + alpha) / float(len(positive) + (alpha * len(dictionary))))
+    if word in negative:
+        return math.log((negative[word] + alpha) / float(len(negative) + (alpha * len(dictionary))))
+    return math.log((0 + alpha) / float(len(negative) + (alpha * len(dictionary))))  # for unseen words
 
 
 # computes the probability that sms is spam
-def eval_sms_bow(is_spam, content, positive, negative):
+def eval_sms_bow(is_spam, content, positive, negative, dictionary):
     result = 0
     words = content.split()
     for word in words:
-        result += math.log(eval_word_bow(is_spam, word, positive, negative))
+        result += eval_word_bow(is_spam, word, positive, negative, dictionary)
     return result
 
 
-def bag_of_words_classifier(prob_spam, prob_not_spam, positive, negative, sms_content):
-    is_spam = math.log(prob_spam) + eval_sms_bow(True, sms_content, positive, negative)
-    is_not_spam = math.log(prob_not_spam) + eval_sms_bow(False, sms_content, positive, negative)
+def bag_of_words_classifier(prob_spam, prob_not_spam, positive, negative, dictionary, sms_content):
+    is_spam = math.log(prob_spam) + eval_sms_bow(True, sms_content, positive, negative, dictionary)
+    is_not_spam = math.log(prob_not_spam) + eval_sms_bow(False, sms_content, positive, negative, dictionary)
     return is_spam > is_not_spam
 
 
