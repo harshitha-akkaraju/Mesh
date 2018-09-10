@@ -1,6 +1,7 @@
 import pandas as pd
 import math
 
+
 def mesh():
     # set up
     file_path = "./spam.csv"
@@ -34,8 +35,10 @@ def mesh():
         else:
             bow_model_labels.append("ham")
 
-    bow_model_certainty = eval_predictions(bow_model_labels, evaluation_data.label)
-    print(bow_model_certainty)
+    bow_model_certainty = get_accuracy(bow_model_labels, evaluation_data.label)
+    print("Correctly classified:", bow_model_certainty[0], "%")
+    print("False negative:", bow_model_certainty[1], "%")
+    print("False positive:", bow_model_certainty[2], "%")
 
 
 # function to obtain the word frequencies in an email
@@ -80,17 +83,26 @@ def bag_of_words_classifier(prob_spam, prob_not_spam, positive, negative, dictio
     return is_spam > is_not_spam
 
 
-def eval_predictions(predictions, labeled):
+def get_accuracy(predictions, labeled):
     labeled = labeled.rename(lambda x: x - 3901)  # switch to 0 based indexing
     num_correct = 0
+    num_false_positive = 0
+    num_false_negative = 0
     for row in labeled.iteritems():
         index = row[0]
         label = row[1]
         if label == predictions[index]:
             num_correct = num_correct + 1
-    return (num_correct / float(len(labeled))) * 100
+        elif label == "ham" and predictions[index] == "spam":
+            num_false_positive = num_false_positive + 1
+        elif label == "spam" and predictions[index] == "ham":
+            num_false_negative = num_false_negative + 1
 
+    correct = round((num_correct / float(len(predictions))) * 100, 2)
+    false_negative = round((num_false_negative / float(len(predictions))) * 100, 2)
+    false_positive = round((num_false_positive / float(len(predictions))) * 100, 2)
+    return correct, false_negative, false_positive
 
 
 if __name__ == '__main__':
-  mesh()
+    mesh()
