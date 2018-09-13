@@ -15,9 +15,9 @@ With minor changes to the Naive Bayes algorithm such as Laplace smoothing and tr
 (to avoid floating point multiplication), the model was able to achieve the following results.
 
 ```
-Correctly classified: 96.23 %
-False negative: 0.54 %
-False positive: 3.23 %
+Correctly classified: 96.23 % messages
+False negative stats: 0.54 %
+False positive stats: 3.23 %
 ```
 
 Read my notes on the Naive Bayes classifier and the run time of this algorithm [here]().
